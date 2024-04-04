@@ -1,7 +1,8 @@
 'use client'
-// pages/TriagemHospitalar.js
+// Importando os hooks necessários do React
 import { useEffect, useState } from 'react';
 
+// Definindo a classe Atendimento para representar um paciente
 class Atendimento {
   constructor(nomePaciente, prioridade) {
     this.nomePaciente = nomePaciente;
@@ -12,13 +13,15 @@ class Atendimento {
   }
 }
 
+// Componente funcional TriagemHospitalar
 export default function TriagemHospitalar() {
+  // Definindo os estados
   const [nomePaciente, setNomePaciente] = useState('');
   const [prioridade, setPrioridade] = useState('Normal');
   const [atendimentos, setAtendimentos] = useState([]);
   const [atendimentoAtual, setAtendimentoAtual] = useState(null);
 
-
+  // Efeito para controlar o tempo de atendimento
   useEffect(() => {
     const interval = setInterval(() => {
       if (atendimentoAtual) {
@@ -38,42 +41,46 @@ export default function TriagemHospitalar() {
     return () => clearInterval(interval);
   }, [atendimentoAtual]);
 
+  // Efeito para iniciar o próximo atendimento quando o atual terminar
   useEffect(() => {
     const iniciarProximoAtendimento = () => {
       if (!atendimentoAtual && atendimentos.length > 0) {
+        // Ordenando os atendimentos por prioridade
         const atendimentosOrdenados = [...atendimentos].sort((a, b) => a.prioridade - b.prioridade);
+        // Selecionando o próximo atendimento
         const proximoAtendimento = atendimentosOrdenados[0];
+        // Definindo o próximo atendimento como o atendimento atual
         setAtendimentoAtual(proximoAtendimento);
+        // Removendo o próximo atendimento da lista de atendimentos
         setAtendimentos(prevAtendimentos => prevAtendimentos.filter(a => a !== proximoAtendimento));
-
-        setTimeout(() => {
-          setAtendimentoAtual(null);
-        }, proximoAtendimento.tempoTerminoAtendimento * 1000);
       }
     };
 
     iniciarProximoAtendimento();
   }, [atendimentoAtual, atendimentos]);
 
+  // Função para lidar com o envio do formulário de adição de paciente
   const handleSubmit = (e) => {
     e.preventDefault();
     const novaPrioridade = prioridade === 'Normal' ? 3 : prioridade === 'Prioritário' ? 2 : 1;
     const novoAtendimento = new Atendimento(nomePaciente, novaPrioridade);
 
-
+    // Verificando se há um atendimento em andamento
     if (!atendimentoAtual) {
       setAtendimentoAtual(novoAtendimento);
     } else {
       setAtendimentos(prevAtendimentos => [...prevAtendimentos, novoAtendimento]);
     }
 
+    // Resetando os campos do formulário
     setNomePaciente('');
     setPrioridade('Normal');
   };
 
+  // Ordenando os atendimentos por prioridade
   atendimentos.sort((a, b) => a.prioridade - b.prioridade);
 
-
+  // Renderização do componente
   return (
     <div className='m-5 h-[100vh]'>
       <h1 className="text-3xl font-bold text-gray-800 mb-4">Triagem Hospitalar</h1>
