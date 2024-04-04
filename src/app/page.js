@@ -1,6 +1,5 @@
 'use client'
 // pages/TriagemHospitalar.js
-
 import { useEffect, useState } from 'react';
 
 class Atendimento {
@@ -9,9 +8,7 @@ class Atendimento {
     this.prioridade = prioridade;
     this.tempoChegada = new Date();
     this.tempoAtendimento = 0;
-    this.tempoTerminoAtendimento = 5;
-    // this.tempoTerminoAtendimento = Math.floor(Math.random() * (15 - 5 + 1)) + 5; // Tempo aleatório entre 5 e 15 segundos
-    this.atendido = true;
+    this.tempoTerminoAtendimento = Math.floor(Math.random() * (15 - 5 + 1)) + 5; // Tempo aleatório entre 5 e 15 segundos
   }
 }
 
@@ -19,38 +16,63 @@ export default function TriagemHospitalar() {
   const [nomePaciente, setNomePaciente] = useState('');
   const [prioridade, setPrioridade] = useState('Normal');
   const [atendimentos, setAtendimentos] = useState([]);
-  const [atendendo, setAtendendo] = useState(false);
+  const [atendimentoAtual, setAtendimentoAtual] = useState(null);
+
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setAtendimentos(prevAtendimentos => {
-        return prevAtendimentos.map(atendimento => {
-          if (atendimento.tempoAtendimento < atendimento.tempoTerminoAtendimento && atendendo == false) {
+      if (atendimentoAtual) {
+        setAtendimentoAtual(prevAtendimento => {
+          if (prevAtendimento.tempoAtendimento < prevAtendimento.tempoTerminoAtendimento ) {
             return {
-              ...atendimento,
-              tempoAtendimento: atendimento.tempoAtendimento + 1
+              ...prevAtendimento,
+              tempoAtendimento: prevAtendimento.tempoAtendimento + 1
             };
           } else {
-            return {
-              ...atendimento,
-              atendido: true
-            };
+            setAtendimentoAtual(null)
           }
         });
-      });
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [atendimentoAtual]);
+
+  useEffect(() => {
+    const iniciarProximoAtendimento = () => {
+      if (!atendimentoAtual && atendimentos.length > 0) {
+        const atendimentosOrdenados = [...atendimentos].sort((a, b) => a.prioridade - b.prioridade);
+        const proximoAtendimento = atendimentosOrdenados[0];
+        setAtendimentoAtual(proximoAtendimento);
+        setAtendimentos(prevAtendimentos => prevAtendimentos.filter(a => a !== proximoAtendimento));
+
+        setTimeout(() => {
+          setAtendimentoAtual(null);
+        }, proximoAtendimento.tempoTerminoAtendimento * 1000);
+      }
+    };
+
+    iniciarProximoAtendimento();
+  }, [atendimentoAtual, atendimentos]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const novaPrioridade = prioridade === 'Normal' ? 3 : prioridade === 'Prioritário' ? 2 : 1;
     const novoAtendimento = new Atendimento(nomePaciente, novaPrioridade);
-    setAtendimentos([...atendimentos, novoAtendimento]);
+
+
+    if (!atendimentoAtual) {
+      setAtendimentoAtual(novoAtendimento);
+    } else {
+      setAtendimentos(prevAtendimentos => [...prevAtendimentos, novoAtendimento]);
+    }
+
     setNomePaciente('');
     setPrioridade('Normal');
   };
+
+  atendimentos.sort((a, b) => a.prioridade - b.prioridade);
+
 
   return (
     <div className='m-5 h-[100vh]'>
@@ -78,18 +100,26 @@ export default function TriagemHospitalar() {
             <th className="p-4 bg-gray-100 font-semibold border-b border-gray-300 text-center">Prioridade</th>
             <th className="p-4 bg-gray-100 font-semibold border-b border-gray-300 text-center">Hora de Chegada</th>
             <th className="p-4 bg-gray-100 font-semibold border-b border-gray-300 text-center">Tempo de Atendimento</th>
+            <th className="p-4 bg-gray-100 font-semibold border-b border-gray-300 text-center">Tempo Estimado de Atendimento</th>
           </tr>
         </thead>
         <tbody>
+        {atendimentoAtual && (
+            <tr className={`bg-green-100 hover:bg-gray-200`}>
+              <td className="p-4 border-b border-gray-300 text-center">{atendimentoAtual.nomePaciente}</td>
+              <td className="p-4 border-b border-gray-300 text-center">{atendimentoAtual.prioridade === 1 ? 'Urgente' : atendimentoAtual.prioridade === 2 ? 'Prioritário' : 'Normal'}</td>
+              <td className="p-4 border-b border-gray-300 text-center">{atendimentoAtual.tempoChegada.toLocaleTimeString()}</td>
+              <td className="p-4 border-b border-gray-300 text-center">{atendimentoAtual.tempoAtendimento}</td>
+              <td className="p-4 border-b border-gray-300 text-center">{atendimentoAtual.tempoTerminoAtendimento}</td>
+            </tr>
+          )}
           {atendimentos.map((atendimento, index) => (
-            <tr key={index} className={`
-              ${atendimento.atendido ? 'bg-green-100' : 'bg-yellow-100'}
-              hover:bg-gray-200
-            `}>
+            <tr key={index} className="bg-yellow-100 hover:bg-gray-200">
               <td className="p-4 border-b border-gray-300 text-center">{atendimento.nomePaciente}</td>
               <td className="p-4 border-b border-gray-300 text-center">{atendimento.prioridade === 1 ? 'Urgente' : atendimento.prioridade === 2 ? 'Prioritário' : 'Normal'}</td>
               <td className="p-4 border-b border-gray-300 text-center">{atendimento.tempoChegada.toLocaleTimeString()}</td>
               <td className="p-4 border-b border-gray-300 text-center">{atendimento.tempoAtendimento}</td>
+              <td className="p-4 border-b border-gray-300 text-center">{atendimento.tempoTerminoAtendimento}</td>
             </tr>
           ))}
         </tbody>
